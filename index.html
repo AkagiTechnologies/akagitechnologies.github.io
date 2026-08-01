@@ -65,7 +65,21 @@
       fade 1.6s ease both,
       drift var(--drift-time) linear infinite;
   }
-  .field::after { inset: 0; background: var(--veil); }
+  .field::after { inset: 0; background: var(--veil); z-index: 1; }
+
+  /* The canvas redraws the same lattice with per-element entropy. It only
+     takes over when JS runs and the variant has a lattice to break down —
+     otherwise the CSS pattern above stays as the fallback. */
+  .grain {
+    position: absolute;
+    inset: 0;
+    display: none;
+    width: 100%;
+    height: 100%;
+    animation: fade 1.6s ease both;
+  }
+  html.entropy .field::before { display: none; }
+  html.entropy .grain { display: block; }
 
   /* Drift translates by exactly one tile period, so the loop is seamless. */
   @keyframes drift {
@@ -227,9 +241,189 @@
 </head>
 
 <body>
-  <div class="field" aria-hidden="true"></div>
+  <div class="field" aria-hidden="true"><canvas class="grain"></canvas></div>
   <main class="stage">
     <h1 class="wordmark"><span>Akagi</span> <span>Technologies</span></h1>
   </main>
+
+<script>
+  /* Redraws the variant's lattice with per-element entropy on a slow
+     order -> breakdown -> order cycle. The wordmark is never touched.
+     Falls back to the static CSS pattern if this doesn't run. */
+  (function () {
+    var root = document.documentElement;
+
+    var SPEC = {
+      v1: { kind: "grid",  step: 34, ink: "22,21,15",    alpha: .10, amp: 44, seg: 34,  dx: 34, dy: 34,  cycle: 90000 },
+      v2: { kind: "dots",  step: 30, ink: "232,235,238", alpha: .24, amp: 38, dot: 1.4, dx: 30, dy: 30,  cycle: 110000 },
+      v3: { kind: "rules", step: 46, ink: "26,23,18",    alpha: .12, amp: 46, seg: 68,  dx: 0,  dy: 46,  cycle: 70000 },
+      v5: { kind: "diag",  step: 15, ink: "236,234,228", alpha: .07, amp: 30, seg: 120, dx: 15, dy: 0,   cycle: 80000 }
+    };
+
+    var spec = SPEC[root.getAttribute("data-variant")];
+    if (!spec) return;                       /* v4 has no lattice to break */
+
+    var canvas = document.querySelector(".grain");
+    if (!canvas || !canvas.getContext) return;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    root.classList.add("entropy");
+
+    var still = window.matchMedia &&
+                window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var TAU = Math.PI * 2;
+    var ENTROPY_CYCLE = 66000;
+    var LEVELS = 4;                          /* alpha buckets, so a frame is
+                                                4 draw calls, not thousands */
+    var W = 0, H = 0, bucket = [];
+
+    /* Same lattice cell always gets the same jitter, so elements keep their
+       identity frame to frame instead of reshuffling. */
+    function noise(a, b, salt) {
+      var x = Math.sin(a * 127.1 + b * 311.7 + salt * 74.7) * 43758.5453;
+      return x - Math.floor(x);
+    }
+
+    function entropyAt(t) {
+      var e = .5 - .5 * Math.cos(TAU * ((t % ENTROPY_CYCLE) / ENTROPY_CYCLE));
+      return Math.pow(e, 1.7);               /* linger in order, pass through chaos */
+    }
+
+    function reset() {
+      bucket = [];
+      for (var i = 0; i < LEVELS; i++) bucket.push([]);
+    }
+    function level(f) {
+      var i = Math.floor(f * LEVELS);
+      return bucket[i < 0 ? 0 : i > LEVELS - 1 ? LEVELS - 1 : i];
+    }
+
+    /* Both ends wander and the span shortens, so gaps open as it decays. */
+    function segment(x1, y1, x2, y2, a, b, e) {
+      var t1 = noise(a, b, 1) * TAU, r1 = noise(a, b, 2) * e * spec.amp;
+      var t2 = noise(a, b, 3) * TAU, r2 = noise(a, b, 4) * e * spec.amp;
+      var s = 1 - .5 * e * noise(a, b, 5);
+      var mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      level(1 - .75 * e * noise(a, b, 6)).push(
+        mx + (x1 - mx) * s + Math.cos(t1) * r1, my + (y1 - my) * s + Math.sin(t1) * r1,
+        mx + (x2 - mx) * s + Math.cos(t2) * r2, my + (y2 - my) * s + Math.sin(t2) * r2
+      );
+    }
+
+    function strokeBuckets() {
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgb(" + spec.ink + ")";
+      for (var i = 0; i < LEVELS; i++) {
+        var a = bucket[i];
+        if (!a.length) continue;
+        ctx.globalAlpha = spec.alpha * ((i + .5) / LEVELS);
+        ctx.beginPath();
+        for (var j = 0; j < a.length; j += 4) {
+          ctx.moveTo(a[j], a[j + 1]);
+          ctx.lineTo(a[j + 2], a[j + 3]);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function fillBuckets() {
+      ctx.fillStyle = "rgb(" + spec.ink + ")";
+      for (var i = 0; i < LEVELS; i++) {
+        var a = bucket[i];
+        if (!a.length) continue;
+        ctx.globalAlpha = spec.alpha * ((i + .5) / LEVELS);
+        ctx.beginPath();
+        for (var j = 0; j < a.length; j += 3) {
+          ctx.moveTo(a[j] + a[j + 2], a[j + 1]);
+          ctx.arc(a[j], a[j + 1], a[j + 2], 0, TAU);
+        }
+        ctx.fill();
+      }
+    }
+
+    function draw(t) {
+      var e = still ? 0 : entropyAt(t);
+      var step = spec.step, seg = spec.seg;
+      var M = spec.amp + step;
+      /* Unwrapped drift: each element keeps its identity as it travels. */
+      var ox = still ? 0 : t / spec.cycle * spec.dx;
+      var oy = still ? 0 : t / spec.cycle * spec.dy;
+      var k, j, x, y;
+
+      ctx.clearRect(0, 0, W, H);
+      reset();
+
+      if (spec.kind === "dots") {
+        for (k = Math.floor((-M + ox) / step); k <= Math.ceil((W + M + ox) / step); k++) {
+          for (j = Math.floor((-M + oy) / step); j <= Math.ceil((H + M + oy) / step); j++) {
+            var ang = noise(k, j, 1) * TAU, rad = noise(k, j, 2) * e * spec.amp;
+            level(1 - .8 * e * noise(k, j, 3)).push(
+              k * step - ox + Math.cos(ang) * rad,
+              j * step - oy + Math.sin(ang) * rad,
+              Math.max(spec.dot * (1 - .4 * e * noise(k, j, 4)), .25)
+            );
+          }
+        }
+        fillBuckets();
+        return;
+      }
+
+      if (spec.kind === "diag") {
+        var span = Math.sqrt(W * W + H * H) / 2 + M;
+        ctx.save();
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(-Math.PI / 4);
+        for (k = Math.floor((-span + ox) / step); k <= Math.ceil((span + ox) / step); k++) {
+          x = k * step - ox;
+          for (j = Math.floor(-span / seg); j <= Math.ceil(span / seg); j++) {
+            segment(x, j * seg, x, (j + 1) * seg, k * 13 + 5, j * 97 + 2, e);
+          }
+        }
+        strokeBuckets();
+        ctx.restore();
+        return;
+      }
+
+      /* grid and rules: horizontal runs, plus verticals for the grid */
+      for (j = Math.floor((-M + oy) / step); j <= Math.ceil((H + M + oy) / step); j++) {
+        y = j * step - oy;
+        for (k = Math.floor(-M / seg); k <= Math.ceil((W + M) / seg); k++) {
+          segment(k * seg, y, (k + 1) * seg, y, k * 7 + 1, j * 31 + 7, e);
+        }
+      }
+      if (spec.kind === "grid") {
+        for (k = Math.floor((-M + ox) / step); k <= Math.ceil((W + M + ox) / step); k++) {
+          x = k * step - ox;
+          for (j = Math.floor(-M / seg); j <= Math.ceil((H + M) / seg); j++) {
+            segment(x, j * seg, x, (j + 1) * seg, k * 17 + 3, j * 53 + 11, e);
+          }
+        }
+      }
+      strokeBuckets();
+    }
+
+    function resize() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = canvas.clientWidth;
+      H = canvas.clientHeight;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (still) draw(0);
+    }
+
+    var start = null, last = -1e9;
+    function frame(now) {
+      if (start === null) start = now;
+      if (now - last >= 33 && !document.hidden) { last = now; draw(now - start); }
+      requestAnimationFrame(frame);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    if (!still) requestAnimationFrame(frame);
+  })();
+</script>
 </body>
 </html>
