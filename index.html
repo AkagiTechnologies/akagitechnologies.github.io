@@ -98,12 +98,92 @@
   }
 
   .stage {
+    position: relative;
     min-height: 100vh;
     min-height: 100svh;
     display: grid;
     place-content: var(--place);
     padding: var(--pad);
     text-align: var(--align);
+  }
+
+  /* Without this nobody learns there is anything below the fold. */
+  .cue {
+    position: absolute;
+    right: clamp(20px, 5vmin, 60px);
+    bottom: clamp(18px, 4vmin, 44px);
+    font-size: .68rem;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: inherit;
+    opacity: .45;
+  }
+  .cue:hover { opacity: .8; }
+
+  /* ---- work grid --------------------------------------------------- */
+  .work {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(40px, 9vmin, 120px) clamp(20px, 6vmin, 64px) clamp(72px, 14vmin, 180px);
+  }
+  .work h2 {
+    margin: 0 0 clamp(24px, 5vmin, 56px);
+    font-size: .72rem;
+    font-weight: 400;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    opacity: .5;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(18px, 3.4vmin, 42px);
+  }
+  @media (max-width: 680px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .tile { margin: 0; }
+  .frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid rgba(128, 128, 128, .3);
+    border-color: color-mix(in srgb, var(--ink) 22%, transparent);
+    background: rgba(128, 128, 128, .08);
+  }
+  .frame video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .badge {
+    position: absolute;
+    right: .7em;
+    bottom: .6em;
+    padding: .35em .6em;
+    font-size: .6rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--ink);
+    opacity: .72;
+    transition: opacity .25s ease;
+    pointer-events: none;
+  }
+  .frame.playing .badge { opacity: 0; }
+
+  .tile figcaption {
+    margin-top: .85em;
+    font-size: clamp(.82rem, 1.5vw, .95rem);
+    line-height: 1.5;
+    opacity: .78;
+  }
+  .tile figcaption a {
+    color: inherit;
+    text-underline-offset: .25em;
+    text-decoration-thickness: 1px;
   }
 
   .wordmark {
@@ -244,7 +324,102 @@
   <div class="field" aria-hidden="true"><canvas class="grain"></canvas></div>
   <main class="stage">
     <h1 class="wordmark"><span>Akagi</span> <span>Technologies</span></h1>
+    <a class="cue" href="#work">Work</a>
   </main>
+
+  <section class="work" id="work">
+    <h2>Recent work</h2>
+    <div class="grid">
+
+      <figure class="tile">
+        <div class="frame">
+          <video src="media/clip1.mp4" poster="media/poster1.jpg"
+                 muted loop playsinline preload="none"
+                 aria-label="Robot arm controlled through an XR overlay showing servo positions"></video>
+          <span class="badge">Play</span>
+        </div>
+        <figcaption>
+          Experimenting with XR to control the b601, with an overlay reading out servo positions.
+          <a href="https://x.com/mkemka_/status/2071037518485885370" target="_blank" rel="noopener">Post</a>
+        </figcaption>
+      </figure>
+
+      <figure class="tile">
+        <div class="frame">
+          <video src="media/clip2.mp4" poster="media/poster2.jpg"
+                 muted loop playsinline preload="none"
+                 aria-label="Drawing a three-dimensional path for the arm to follow"></video>
+          <span class="badge">Play</span>
+        </div>
+        <figcaption>
+          Drawing a 3D path and having the arm follow it. Work in progress, and much slower for now.
+          <a href="https://x.com/mkemka_/status/2076886152997740686" target="_blank" rel="noopener">Post</a>
+        </figcaption>
+      </figure>
+
+      <figure class="tile">
+        <div class="frame">
+          <video src="media/clip3.mp4" poster="media/poster3.jpg"
+                 muted loop playsinline preload="none"
+                 aria-label="A faster path-following setup with numbered waypoints"></video>
+          <span class="badge">Play</span>
+        </div>
+        <figcaption>
+          A slightly faster path-following setup. Still trying to follow different clicks, which may
+          have to wait for a camera on the gripper.
+          <a href="https://x.com/mkemka_/status/2076134665820528743" target="_blank" rel="noopener">Post</a>
+        </figcaption>
+      </figure>
+
+      <figure class="tile">
+        <div class="frame">
+          <video src="media/clip4.mp4" poster="media/poster4.jpg"
+                 muted loop playsinline preload="none"
+                 aria-label="Hand controller steering a simplified motion path"></video>
+          <span class="badge">Play</span>
+        </div>
+        <figcaption>
+          Trying to simplify the path and show more of the plan along the line. Not working yet.
+          <a href="https://x.com/mkemka_/status/2077495028465975604" target="_blank" rel="noopener">Post</a>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+<script>
+  /* Hover plays on a mouse; tap plays on touch. Nothing downloads until
+     then — preload="none" keeps four videos off the initial page weight. */
+  (function () {
+    var mq = window.matchMedia;
+    var hoverable = mq && mq("(hover: hover) and (pointer: fine)").matches;
+    var calm = mq && mq("(prefers-reduced-motion: reduce)").matches;
+
+    Array.prototype.forEach.call(document.querySelectorAll(".frame"), function (frame) {
+      var video = frame.querySelector("video");
+      if (!video) return;
+
+      function play() {
+        frame.classList.add("playing");
+        var p = video.play();
+        if (p && p.catch) p.catch(function () { frame.classList.remove("playing"); });
+      }
+      function stop() {
+        frame.classList.remove("playing");
+        video.pause();
+      }
+
+      /* Reduce-motion users get click-to-play rather than motion on hover. */
+      if (hoverable && !calm) {
+        frame.addEventListener("mouseenter", play);
+        frame.addEventListener("mouseleave", stop);
+      }
+      frame.addEventListener("click", function () {
+        if (video.paused) play(); else stop();
+      });
+    });
+  })();
+</script>
 
 <script>
   /* Redraws the variant's lattice with per-element entropy on a slow
