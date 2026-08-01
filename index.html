@@ -98,7 +98,6 @@
   }
 
   .stage {
-    position: relative;
     min-height: 100vh;
     min-height: 100svh;
     display: grid;
@@ -107,33 +106,11 @@
     text-align: var(--align);
   }
 
-  /* Without this nobody learns there is anything below the fold. */
-  .cue {
-    position: absolute;
-    right: clamp(20px, 5vmin, 60px);
-    bottom: clamp(18px, 4vmin, 44px);
-    font-size: .68rem;
-    letter-spacing: .28em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: inherit;
-    opacity: .45;
-  }
-  .cue:hover { opacity: .8; }
-
-  /* ---- work grid --------------------------------------------------- */
+  /* ---- work grid — the first screen -------------------------------- */
   .work {
     max-width: 1180px;
     margin: 0 auto;
-    padding: clamp(40px, 9vmin, 120px) clamp(20px, 6vmin, 64px) clamp(72px, 14vmin, 180px);
-  }
-  .work h2 {
-    margin: 0 0 clamp(24px, 5vmin, 56px);
-    font-size: .72rem;
-    font-weight: 400;
-    letter-spacing: .28em;
-    text-transform: uppercase;
-    opacity: .5;
+    padding: clamp(20px, 5vmin, 56px) clamp(20px, 6vmin, 64px) clamp(28px, 6vmin, 72px);
   }
   .grid {
     display: grid;
@@ -142,7 +119,6 @@
   }
   @media (max-width: 680px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 
-  .tile { margin: 0; }
   .frame {
     position: relative;
     aspect-ratio: 16 / 9;
@@ -158,33 +134,23 @@
     height: 100%;
     object-fit: cover;
   }
-  .badge {
+  /* Wordless play mark, so a tap target is still discoverable on touch. */
+  .frame::after {
+    content: "";
     position: absolute;
-    right: .7em;
-    bottom: .6em;
-    padding: .35em .6em;
-    font-size: .6rem;
-    letter-spacing: .22em;
-    text-transform: uppercase;
-    color: var(--paper);
-    background: var(--ink);
-    opacity: .72;
+    right: .95em;
+    bottom: .85em;
+    width: 0;
+    height: 0;
+    border-left: .62em solid rgba(255, 255, 255, .92);
+    border-top: .42em solid transparent;
+    border-bottom: .42em solid transparent;
+    opacity: .8;
     transition: opacity .25s ease;
     pointer-events: none;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
   }
-  .frame.playing .badge { opacity: 0; }
-
-  .tile figcaption {
-    margin-top: .85em;
-    font-size: clamp(.82rem, 1.5vw, .95rem);
-    line-height: 1.5;
-    opacity: .78;
-  }
-  .tile figcaption a {
-    color: inherit;
-    text-underline-offset: .25em;
-    text-decoration-thickness: 1px;
-  }
+  .frame.playing::after { opacity: 0; }
 
   .wordmark {
     margin: 0;
@@ -322,70 +288,39 @@
 
 <body>
   <div class="field" aria-hidden="true"><canvas class="grain"></canvas></div>
-  <main class="stage">
-    <h1 class="wordmark"><span>Akagi</span> <span>Technologies</span></h1>
-    <a class="cue" href="#work">Work</a>
-  </main>
-
-  <section class="work" id="work">
-    <h2>Recent work</h2>
+  <section class="work">
     <div class="grid">
 
-      <figure class="tile">
-        <div class="frame">
-          <video src="media/clip1.mp4" poster="media/poster1.jpg"
-                 muted loop playsinline preload="none"
-                 aria-label="Robot arm controlled through an XR overlay showing servo positions"></video>
-          <span class="badge">Play</span>
-        </div>
-        <figcaption>
-          Experimenting with XR to control the b601, with an overlay reading out servo positions.
-          <a href="https://x.com/mkemka_/status/2071037518485885370" target="_blank" rel="noopener">Post</a>
-        </figcaption>
-      </figure>
+      <div class="frame">
+        <video src="media/clip1.mp4" poster="media/poster1.jpg"
+               muted loop playsinline preload="none"
+               aria-label="Robot arm controlled through an XR overlay showing servo positions"></video>
+      </div>
 
-      <figure class="tile">
-        <div class="frame">
-          <video src="media/clip2.mp4" poster="media/poster2.jpg"
-                 muted loop playsinline preload="none"
-                 aria-label="Drawing a three-dimensional path for the arm to follow"></video>
-          <span class="badge">Play</span>
-        </div>
-        <figcaption>
-          Drawing a 3D path and having the arm follow it. Work in progress, and much slower for now.
-          <a href="https://x.com/mkemka_/status/2076886152997740686" target="_blank" rel="noopener">Post</a>
-        </figcaption>
-      </figure>
+      <div class="frame">
+        <video src="media/clip2.mp4" poster="media/poster2.jpg"
+               muted loop playsinline preload="none"
+               aria-label="Drawing a three-dimensional path for the arm to follow"></video>
+      </div>
 
-      <figure class="tile">
-        <div class="frame">
-          <video src="media/clip3.mp4" poster="media/poster3.jpg"
-                 muted loop playsinline preload="none"
-                 aria-label="A faster path-following setup with numbered waypoints"></video>
-          <span class="badge">Play</span>
-        </div>
-        <figcaption>
-          A slightly faster path-following setup. Still trying to follow different clicks, which may
-          have to wait for a camera on the gripper.
-          <a href="https://x.com/mkemka_/status/2076134665820528743" target="_blank" rel="noopener">Post</a>
-        </figcaption>
-      </figure>
+      <div class="frame">
+        <video src="media/clip3.mp4" poster="media/poster3.jpg"
+               muted loop playsinline preload="none"
+               aria-label="A faster path-following setup with numbered waypoints"></video>
+      </div>
 
-      <figure class="tile">
-        <div class="frame">
-          <video src="media/clip4.mp4" poster="media/poster4.jpg"
-                 muted loop playsinline preload="none"
-                 aria-label="Hand controller steering a simplified motion path"></video>
-          <span class="badge">Play</span>
-        </div>
-        <figcaption>
-          Trying to simplify the path and show more of the plan along the line. Not working yet.
-          <a href="https://x.com/mkemka_/status/2077495028465975604" target="_blank" rel="noopener">Post</a>
-        </figcaption>
-      </figure>
+      <div class="frame">
+        <video src="media/clip4.mp4" poster="media/poster4.jpg"
+               muted loop playsinline preload="none"
+               aria-label="Hand controller steering a simplified motion path"></video>
+      </div>
 
     </div>
   </section>
+
+  <main class="stage">
+    <h1 class="wordmark"><span>Akagi</span> <span>Technologies</span></h1>
+  </main>
 
 <script>
   /* Hover plays on a mouse; tap plays on touch. Nothing downloads until
