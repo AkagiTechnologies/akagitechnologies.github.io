@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-variant="v1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Akagi Technologies</title>
+<meta name="description" content="Akagi Technologies">
+<meta name="theme-color" content="#f4f1ea">
+<meta property="og:title" content="Akagi Technologies">
+<meta property="og:site_name" content="Akagi Technologies">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20fill='%23f4f1ea'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='8.5'%20fill='none'%20stroke='%2316150f'%20stroke-width='2.5'/%3E%3C/svg%3E">
+
+<style>
+  /* ---- reset ------------------------------------------------------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  /* ---- shared spine ------------------------------------------------ */
+  :root {
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino,
+             "Book Antiqua", Georgia, "Times New Roman", serif;
+    --pattern: none;
+    --pattern-size: auto;
+    --mask: none;
+    --place: center;
+    --pad: 8vmin;
+    --align: center;
+    --lift: 0;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100svh;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Decorative pattern layer. Paper sits on .field, pattern on ::before
+     so the mask fades the pattern without fading the paper. */
+  .field { position: fixed; inset: 0; z-index: -1; background-color: var(--paper); }
+  .field::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--pattern);
+    background-size: var(--pattern-size);
+    -webkit-mask-image: var(--mask);
+    mask-image: var(--mask);
+  }
+
+  .stage {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    place-content: var(--place);
+    padding: var(--pad);
+    text-align: var(--align);
+  }
+
+  .wordmark {
+    margin: 0;
+    font-weight: 400;
+    font-size: var(--size);
+    line-height: var(--leading, 1);
+    letter-spacing: var(--tracking, 0);
+    transform: translateY(calc(-1 * var(--lift)));
+  }
+  .wordmark span { display: block; }
+
+  /* ---- v1 — hairline grid, warm paper ------------------------------ */
+  [data-variant="v1"] {
+    --paper: #f4f1ea;
+    --ink: #16150f;
+    --pattern:
+      repeating-linear-gradient(0deg,  rgba(22,21,15,.10) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(22,21,15,.10) 0 1px, transparent 1px 34px);
+    --size: clamp(2.6rem, 9vw, 7.5rem);
+    --leading: .94;
+    --tracking: -.015em;
+    --lift: 4vh;
+  }
+
+  /* ---- v2 — dot field, dark paper ---------------------------------- */
+  [data-variant="v2"] {
+    --paper: #101418;
+    --ink: #e8ebee;
+    --pattern: radial-gradient(circle, rgba(232,235,238,.24) 1.4px, transparent 1.5px);
+    --pattern-size: 30px 30px;
+    --mask: radial-gradient(circle at 50% 42%, #000 22%, transparent 80%);
+    --place: end start;
+    --align: left;
+    --pad: clamp(28px, 7vmin, 84px);
+    --size: clamp(1.15rem, 3.2vw, 2.2rem);
+    --leading: 1.5;
+    --tracking: .24em;
+  }
+  [data-variant="v2"] .wordmark { font-variant-caps: all-small-caps; }
+
+  /* ---- v3 — ruled, ivory ------------------------------------------- */
+  [data-variant="v3"] {
+    --paper: #faf6ec;
+    --ink: #1a1712;
+    --pattern: repeating-linear-gradient(0deg, rgba(26,23,18,.12) 0 1px, transparent 1px 46px);
+    --size: clamp(1.5rem, 5vw, 3.4rem);
+    --leading: 1.35;
+    --tracking: .02em;
+    --lift: 2vh;
+  }
+  [data-variant="v3"] .wordmark {
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: .28em;
+  }
+  [data-variant="v3"] .wordmark span { display: inline; }
+
+  /* ---- v4 — tint wash, no pattern ---------------------------------- */
+  [data-variant="v4"] {
+    --paper: #d9e0d5;
+    --ink: #22281f;
+    --pattern: radial-gradient(125% 95% at 18% 0%, rgba(255,255,255,.55), transparent 62%);
+    --pattern-size: cover;
+    --place: center start;
+    --align: left;
+    --pad: clamp(32px, 9vmin, 140px);
+    --size: clamp(3rem, 12vw, 10rem);
+    --leading: .88;
+    --tracking: -.025em;
+  }
+
+  /* ---- v5 — diagonal hairlines, dark paper, knocked-out panel ------- */
+  [data-variant="v5"] {
+    --paper: #14151a;
+    --ink: #eceae4;
+    --pattern: repeating-linear-gradient(45deg, rgba(236,234,228,.07) 0 1px, transparent 1px 15px);
+    --size: clamp(1.9rem, 6.5vw, 5rem);
+    --leading: 1.05;
+    --tracking: .01em;
+  }
+  [data-variant="v5"] .wordmark {
+    background: var(--paper);
+    padding: clamp(20px, 5vmin, 56px) clamp(24px, 6vmin, 72px);
+  }
+</style>
+
+<script>
+  (function () {
+    var V = ["v1", "v2", "v3", "v4", "v5"];
+    var THEME = { v1: "#f4f1ea", v2: "#101418", v3: "#faf6ec", v4: "#d9e0d5", v5: "#14151a" };
+    var KEY = "akagi:variant";
+
+    var forced = (location.search.match(/[?&]v=v?(\d)/) || [])[1];
+    var pick;
+
+    if (forced && V.indexOf("v" + forced) > -1) {
+      pick = "v" + forced;
+    } else {
+      var last = null;
+      try { last = sessionStorage.getItem(KEY); } catch (e) {}
+      pick = V[Math.floor(Math.random() * V.length)];
+      if (pick === last) pick = V[Math.floor(Math.random() * V.length)];
+      try { sessionStorage.setItem(KEY, pick); } catch (e) {}
+    }
+
+    document.documentElement.setAttribute("data-variant", pick);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", THEME[pick]);
+  })();
+</script>
+</head>
+
+<body>
+  <div class="field" aria-hidden="true"></div>
+  <main class="stage">
+    <h1 class="wordmark"><span>Akagi</span> <span>Technologies</span></h1>
+  </main>
+</body>
+</html>

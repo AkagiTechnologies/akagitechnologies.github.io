@@ -1,6 +1,18 @@
-title: "Akagi Technologies Announcement Blog"
+title: "Akagi Technologies"
 author: "Synthetic Cereluean Mite"
-description: "Random ideas and thoughts about the future" # This will show up in places like twitter, linkedin, etc, if you share your sites url as a post.
+description: "Akagi Technologies" # This will show up in places like twitter, linkedin, etc, if you share your sites url as a post.
+
+# The site currently publishes a single static placeholder (index.html).
+# The blog below is kept intact but excluded from the build — delete this
+# `exclude` block to bring it back.
+exclude:
+  - _posts
+  - _layouts
+  - _includes
+  - archive.md
+  - index.md
+  - css
+  - js
 
 # Email / Social media user names used by the minima theme:
 # All of these are optional and can be removed or commented out
@@ -27,7 +39,7 @@ kramdown:
     disable: true
     
 plugins:
-  - jekyll-feed
+  #- jekyll-feed   # re-enable alongside the `exclude` block above
   - jekyll-sitemap
 
 titles_from_headings:
