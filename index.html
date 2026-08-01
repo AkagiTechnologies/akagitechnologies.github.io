@@ -23,7 +23,10 @@
              "Book Antiqua", Georgia, "Times New Roman", serif;
     --pattern: none;
     --pattern-size: auto;
-    --mask: none;
+    --veil: none;
+    --drift-x: 0px;
+    --drift-y: 0px;
+    --drift-time: 90s;
     --place: center;
     --pad: 8vmin;
     --align: center;
@@ -40,17 +43,44 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Decorative pattern layer. Paper sits on .field, pattern on ::before
-     so the mask fades the pattern without fading the paper. */
-  .field { position: fixed; inset: 0; z-index: -1; background-color: var(--paper); }
-  .field::before {
-    content: "";
-    position: absolute;
+  /* Decorative pattern layer. Paper sits on .field; the pattern rides on
+     ::before, oversized so its slow drift never exposes an edge; ::after
+     holds a static paper-coloured veil that stays put while it moves. */
+  .field {
+    position: fixed;
     inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    background-color: var(--paper);
+  }
+  .field::before,
+  .field::after { content: ""; position: absolute; }
+
+  .field::before {
+    inset: -25%;
     background-image: var(--pattern);
     background-size: var(--pattern-size);
-    -webkit-mask-image: var(--mask);
-    mask-image: var(--mask);
+    will-change: transform;
+    animation:
+      fade 1.6s ease both,
+      drift var(--drift-time) linear infinite;
+  }
+  .field::after { inset: 0; background: var(--veil); }
+
+  /* Drift translates by exactly one tile period, so the loop is seamless. */
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(var(--drift-x), var(--drift-y), 0); }
+  }
+  /* v4 has no tiling to loop — its wash breathes instead. */
+  @keyframes breathe {
+    from { transform: translate3d(-1.5%, -1%, 0) scale(1.04); }
+    to   { transform: translate3d( 1.5%,  1%, 0) scale(1.10); }
+  }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(calc(-1 * var(--lift) + .4em)); }
+    to   { opacity: 1; transform: translateY(calc(-1 * var(--lift))); }
   }
 
   .stage {
@@ -69,6 +99,7 @@
     line-height: var(--leading, 1);
     letter-spacing: var(--tracking, 0);
     transform: translateY(calc(-1 * var(--lift)));
+    animation: rise 1.05s cubic-bezier(.22, .68, .24, 1) .1s both;
   }
   .wordmark span { display: block; }
 
@@ -79,6 +110,9 @@
     --pattern:
       repeating-linear-gradient(0deg,  rgba(22,21,15,.10) 0 1px, transparent 1px 34px),
       repeating-linear-gradient(90deg, rgba(22,21,15,.10) 0 1px, transparent 1px 34px);
+    --drift-x: 34px;
+    --drift-y: 34px;
+    --drift-time: 90s;
     --size: clamp(2.6rem, 9vw, 7.5rem);
     --leading: .94;
     --tracking: -.015em;
@@ -91,7 +125,10 @@
     --ink: #e8ebee;
     --pattern: radial-gradient(circle, rgba(232,235,238,.24) 1.4px, transparent 1.5px);
     --pattern-size: 30px 30px;
-    --mask: radial-gradient(circle at 50% 42%, #000 22%, transparent 80%);
+    --veil: radial-gradient(circle at 50% 42%, transparent 20%, var(--paper) 78%);
+    --drift-x: 30px;
+    --drift-y: 30px;
+    --drift-time: 110s;
     --place: end start;
     --align: left;
     --pad: clamp(28px, 7vmin, 84px);
@@ -106,6 +143,9 @@
     --paper: #faf6ec;
     --ink: #1a1712;
     --pattern: repeating-linear-gradient(0deg, rgba(26,23,18,.12) 0 1px, transparent 1px 46px);
+    --drift-x: 0px;
+    --drift-y: 46px;
+    --drift-time: 70s;
     --size: clamp(1.5rem, 5vw, 3.4rem);
     --leading: 1.35;
     --tracking: .02em;
@@ -130,12 +170,19 @@
     --leading: .88;
     --tracking: -.025em;
   }
+  [data-variant="v4"] .field::before {
+    animation: fade 1.6s ease both, breathe 48s ease-in-out infinite alternate;
+  }
 
   /* ---- v5 — diagonal hairlines, dark paper, knocked-out panel ------- */
   [data-variant="v5"] {
     --paper: #14151a;
     --ink: #eceae4;
     --pattern: repeating-linear-gradient(45deg, rgba(236,234,228,.07) 0 1px, transparent 1px 15px);
+    /* one 15px period along the gradient axis = 15/sqrt(2) on each axis */
+    --drift-x: 10.607px;
+    --drift-y: -10.607px;
+    --drift-time: 80s;
     --size: clamp(1.9rem, 6.5vw, 5rem);
     --leading: 1.05;
     --tracking: .01em;
@@ -143,6 +190,13 @@
   [data-variant="v5"] .wordmark {
     background: var(--paper);
     padding: clamp(20px, 5vmin, 56px) clamp(24px, 6vmin, 72px);
+  }
+
+  /* ---- motion opt-out ---------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .field::before,
+    [data-variant="v4"] .field::before,
+    .wordmark { animation: none; }
   }
 </style>
 
