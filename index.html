@@ -285,8 +285,17 @@
       return x - Math.floor(x);
     }
 
+    /* ?e=0..1 pins entropy, for checking what the canvas is actually doing. */
+    var forced = (location.search.match(/[?&]e=([0-9.]+)/) || [])[1];
+    var pinned = forced === undefined ? null
+               : Math.max(0, Math.min(1, parseFloat(forced) || 0));
+
+    /* Each load enters the cycle somewhere different. Starting every visit
+       at perfect order means a short look sees nothing happen at all. */
+    var phase = Math.random() * ENTROPY_CYCLE;
+
     function entropyAt(t) {
-      var e = .5 - .5 * Math.cos(TAU * ((t % ENTROPY_CYCLE) / ENTROPY_CYCLE));
+      var e = .5 - .5 * Math.cos(TAU * (((t + phase) % ENTROPY_CYCLE) / ENTROPY_CYCLE));
       return Math.pow(e, 1.7);               /* linger in order, pass through chaos */
     }
 
@@ -343,7 +352,7 @@
     }
 
     function draw(t) {
-      var e = still ? 0 : entropyAt(t);
+      var e = pinned !== null ? pinned : still ? 0 : entropyAt(t);
       var step = spec.step, seg = spec.seg;
       var M = spec.amp + step;
       /* Unwrapped drift: each element keeps its identity as it travels. */
